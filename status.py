@@ -9,7 +9,9 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 parser = argparse.ArgumentParser(description='Description of your program')
-parser.add_argument('-a','--action', choices=['health', 'allocation', 'nodes', 'shards', 'quickstatus'], help='Get the health of the Elasticsearch Cluster', required=True)
+parser.add_argument('-a','--action', choices=['health', 'allocation', 'nodes', 'shards', 'quickstatus', 'tasks'], help='Get the health of the Elasticsearch Cluster', required=True)
+parser.add_argument('-u','--username', help='Pass a username to authenticate')
+parser.add_argument('-p','--password', help='Pass a password to authenticate')
 parser.add_argument('-f','--filter', help='Filter search down. Use with shards')
 args = parser.parse_args()
 
@@ -18,32 +20,38 @@ headers = {
     "Accept": "application/json"
 }
 
-elasticsearch_url = '10.96.1.91'
+elasticsearch_url = '10.96.1.91:9201'
 
 def get_health():
-    health_url = 'https://' + elasticsearch_url + ':9200/_cat/health?format=json'
+    health_url = 'https://' + elasticsearch_url + '/_cat/health?format=json'
     r = requests.get(health_url, auth=('admin', 'admin'), verify=False)
     data = json.dumps(r.json(), indent=4)
     print data
 
 def get_allocation():
-    allocation_url = 'https://' + elasticsearch_url + ':9200/_cat/allocation?v'
+    allocation_url = 'https://' + elasticsearch_url + '/_cat/allocation?v'
     r = requests.get(allocation_url, auth=('admin', 'admin'), verify=False)
     data = r.text
     print data
 
 def get_nodes():
-    nodes_url = 'https://' + elasticsearch_url + ':9200/_cat/nodes?v'
+    nodes_url = 'https://' + elasticsearch_url + '/_cat/nodes?v'
     r = requests.get(nodes_url, auth=('admin', 'admin'), verify=False)
     data = r.text
     print data
 
 def list_shards(argfilter):
     if argfilter:
-        shards_url = 'https://' + elasticsearch_url + ':9200/_cat/shards/'+ argfilter +''
+        shards_url = 'https://' + elasticsearch_url + '/_cat/shards/'+ argfilter +''
     elif argfilter == "all":
-        shards_url = 'https://' + elasticsearch_url + ':9200/_cat/shards'
+        shards_url = 'https://' + elasticsearch_url + '/_cat/shards'
     r = requests.get(shards_url, auth=('admin', 'admin'), verify=False)
+    data = r.text
+    print data
+
+def list_tasks():
+    tasks_url = 'https://' + elasticsearch_url + '/_cat/tasks?&v&detailed'
+    r = requests.get(tasks_url, auth=('admin', 'admin'), verify=False)
     data = r.text
     print data
 
@@ -66,3 +74,6 @@ if args.action == "quickstatus":
     get_health()
     get_allocation()
     get_nodes()
+
+if args.action == "tasks":
+    list_tasks()

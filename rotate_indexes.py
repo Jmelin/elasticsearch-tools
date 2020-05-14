@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+## TODO : Allow the ability to exclude indices from being rotated or delete
+
 import json
 import requests
 from datetime import datetime, date
@@ -11,21 +13,21 @@ headers = {
     "Accept": "application/json"
 }
 
-elasticsearch_url = '10.96.1.91'
-days_on_hot = 7
-days_on_warm = days_on_hot + 10000
-days_on_cold = days_on_warm + 10000
+elasticsearch_url = '10.96.1.91:9200'
+days_on_hot = 7 #7 days
+days_on_warm = days_on_hot + 13 #20 days
+days_on_cold = days_on_warm + 12 #32 days
 
 indexfilter = '*'
 
 def get_all_indexes(index_filter):
-    indices_url = 'https://' + elasticsearch_url + ':9200/_cat/indices/'+ index_filter +'?h=index&format=json'
+    indices_url = 'https://' + elasticsearch_url + '/_cat/indices/'+ index_filter +'?h=index&format=json'
     r = requests.get(indices_url, auth=('admin', 'admin'), verify=False)
     data = r.json()
     return data
 
 def add_hot_requirement(index):
-    indices_settings_url = 'https://' + elasticsearch_url + ':9200/' + index + '/_settings'
+    indices_settings_url = 'https://' + elasticsearch_url + '/' + index + '/_settings'
     data = '{"index.routing.allocation.require.box_type": "hot"}'
     r = requests.put(indices_settings_url, headers=headers, data=data, auth=('admin', 'admin'), verify=False)
     if r.status_code is 200:
@@ -41,7 +43,7 @@ def rotate_indexes(indexes):
     for i in indexes:
         index_name = i['index']
 
-        index_endpoint = 'https://' + elasticsearch_url + ':9200/' + index_name + '?include_type_name=false'
+        index_endpoint = 'https://' + elasticsearch_url + '/' + index_name + '?include_type_name=false'
         r = requests.get(index_endpoint, auth=('admin', 'admin'), verify=False)
         data = r.json()
         try:
@@ -58,7 +60,7 @@ def rotate_indexes(indexes):
         try:
             if index_node_requirement == 'hot':
                 if days_between.days >= days_on_hot:
-                    indices_settings_url = 'https://' + elasticsearch_url + ':9200/' + index_name + '/_settings'
+                    indices_settings_url = 'https://' + elasticsearch_url + '/' + index_name + '/_settings'
                     data = '{"index.routing.allocation.require.box_type": "warm"}'
                     r = requests.put(indices_settings_url, headers=headers, data=data, auth=('admin', 'admin'), verify=False)
                     if r.status_code is 200:
@@ -67,7 +69,7 @@ def rotate_indexes(indexes):
                         print('{} - {}').format(r.json, r.text)
             elif index_node_requirement == 'warm':
                 if days_between.days >= days_on_warm:
-                    indices_settings_url = 'https://' + elasticsearch_url + ':9200/' + index_name + '/_settings'
+                    indices_settings_url = 'https://' + elasticsearch_url + '/' + index_name + '/_settings'
                     data = '{"index.routing.allocation.require.box_type": "cold"}'
                     r = requests.put(indices_settings_url, headers=headers, data=data, auth=('admin', 'admin'), verify=False)
 
@@ -79,8 +81,14 @@ def rotate_indexes(indexes):
                     else:
                         print('{} - {}').format(r.json, r.text)
             elif index_node_requirement == 'cold':
-                ## TODO: Delete indexes here
-                pass
+                if days_between.days >= days_on_cold:
+                    indice_delete_url = 'https://' + elasticsearch_url + '/' + index_name + ''
+                    r = requests.delete(indice_delete_url,headers=headers, data=data, auth=('admin', 'admin'), verify=False)
+
+                    if r.status_code is 200:
+                        print('{} - {} is being deleted').format(r.text, index_name)
+                    else:
+                        print('{} - {}').format(r.json, r.text)
         except KeyError:
             print('issue')
 
