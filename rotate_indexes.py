@@ -13,10 +13,14 @@ headers = {
     "Accept": "application/json"
 }
 
-elasticsearch_url = '10.96.1.91:9200'
-days_on_hot = 7 #7 days
-days_on_warm = days_on_hot + 13 #20 days
-days_on_cold = days_on_warm + 12 #32 days
+elasticsearch_url = '10.96.1.91:9202'
+#days_on_hot = 7 #7 days
+#days_on_warm = days_on_hot + 13 #20 days
+#days_on_cold = days_on_warm + 12 #32 days
+
+days_on_hot = 3 #3 days
+days_on_warm = days_on_hot + 2 #5 days
+days_on_cold = days_on_warm + 2 #7 days
 
 indexfilter = '*'
 
@@ -42,6 +46,10 @@ def rotate_indexes(indexes):
 
     for i in indexes:
         index_name = i['index']
+
+        if index_name == '.kibana':
+            print('This is {}. Should Skip.').format(index_name)
+            continue
 
         index_endpoint = 'https://' + elasticsearch_url + '/' + index_name + '?include_type_name=false'
         r = requests.get(index_endpoint, auth=('admin', 'admin'), verify=False)

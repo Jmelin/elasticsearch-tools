@@ -20,7 +20,7 @@ headers = {
     "Accept": "application/json"
 }
 
-elasticsearch_url = '10.96.1.91:9201'
+elasticsearch_url = '10.96.1.91:9202'
 
 def get_health():
     health_url = 'https://' + elasticsearch_url + '/_cat/health?format=json'
@@ -41,10 +41,7 @@ def get_nodes():
     print data
 
 def list_shards(argfilter):
-    if argfilter:
-        shards_url = 'https://' + elasticsearch_url + '/_cat/shards/'+ argfilter +''
-    elif argfilter == "all":
-        shards_url = 'https://' + elasticsearch_url + '/_cat/shards'
+    shards_url = 'https://' + elasticsearch_url + '/_cat/shards?h=index,shard,prirep,state,unassigned.reason'
     r = requests.get(shards_url, auth=('admin', 'admin'), verify=False)
     data = r.text
     print data
