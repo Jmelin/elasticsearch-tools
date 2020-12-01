@@ -43,12 +43,14 @@ def rotate_indexes(indexes):
     today = date.today()
     currentday = today.strftime('%Y.%m.%d')
     dateformat = '%Y.%m.%d'
+    index_node_requirement = ''
 
     for i in indexes:
         index_name = i['index']
 
         if index_name == '.kibana':
             print('This is {}. Should Skip.').format(index_name)
+            add_hot_requirement(index_name)
             continue
 
         index_endpoint = 'https://' + elasticsearch_url + '/' + index_name + '?include_type_name=false'
